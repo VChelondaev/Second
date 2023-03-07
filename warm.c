@@ -4,6 +4,8 @@
 #include <malloc.h>
 #include <time.h>
 #include <math.h>
+#include <string.h>
+#include <stdlib.h>
 
 int main(int argc, char** argv) {
 
@@ -34,13 +36,18 @@ int main(int argc, char** argv) {
 
 	memcpy(arr_new, arr, N * N * sizeof(double));
 
+	int size = N * N;
 	int iter = 0;
 	clock_t start = clock();
-	#pragma acc enter data copyin(array[0:realsize],arraynew[0:realsize])
+	#pragma acc enter data copyin(arr[0:size],arr_new[0:size], error)
 	for (; ((iter < ITER_MAX) && (error > accuracy)) ; iter++) {
-		error = 0.0;
+#pragma acc kernels async(1)
+		{
+			error = 0.0;
+		}
+#pragma acc update device (error) async(1)
 		#pragma acc data present(array,arraynew, error)
-		#pragma acc parallel loop independent collapse(2) vector vector_length(256) gang num_gangs(128) reduction(max:error)
+		#pragma acc parallel loop independent collapse(2) vector vector_length(256) gang num_gangs(256) reduction(max:error) async(1)
 		for (int i = 1; i < N-1; i++) {
 			for (int j = 1; j < N-1; j++) {
 				int n = i * N + j;
@@ -49,7 +56,8 @@ int main(int argc, char** argv) {
 			}
 			
 		}
-		#pragma acc update host(error
+		#pragma acc update host(error) async(1)
+#pragma acc wait(1)
 		double* temp = arr;
 		arr = arr_new;
 		arr_new = temp;
