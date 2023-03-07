@@ -5,9 +5,6 @@
 #include <time.h>
 #include <math.h>
 
-//#define ITER_MAX 1000000
-//#define N 128
-
 int main(int argc, char** argv) {
 
 	double accuracy = 0.000001;
@@ -27,6 +24,7 @@ int main(int argc, char** argv) {
 	arr[N * N -1] = 30;
 
 
+	#pragma acc parallel loop
 	for (int i = 1; i < N; i++) {
 		arr[i] = arr[0] + step * i;
 		arr[N * (N - 1) + i] = arr[N - 1] + step * i;
@@ -38,31 +36,29 @@ int main(int argc, char** argv) {
 
 	int iter = 0;
 	clock_t start = clock();
+	#pragma acc enter data copyin(array[0:realsize],arraynew[0:realsize])
 	for (; ((iter < ITER_MAX) && (error > accuracy)) ; iter++) {
 		error = 0.0;
+		#pragma acc data present(array,arraynew, error)
+		#pragma acc parallel loop independent collapse(2) vector vector_length(256) gang num_gangs(128) reduction(max:error)
 		for (int i = 1; i < N-1; i++) {
 			for (int j = 1; j < N-1; j++) {
 				int n = i * N + j;
 				arr_new[n] = 0.25 * (arr[n - 1] + arr[n + 1] + arr[(i - 1) * N + j] + arr[(i + 1) * N + j]);
-				//arr_new[N - n] = 0.25 * (arr[(N - n) - 1] + arr[(N - n) + 1] + arr[N - ((i - 1) * N + j)] + arr[N-((i + 1) * N + j)]);
 				error = fmax(error, (arr_new[n] - arr[n]));
 			}
 			
 		}
+		#pragma acc update host(error
 		double* temp = arr;
 		arr = arr_new;
 		arr_new = temp;
 	}
+	clock_t end = clock();
 
-	//for (int i = 0; i < N; i++) { 
-	//	for (int j = 0; j < N; j++) {
-	//		printf("%lf ", arr_new[i * N + j]);
-	//	}
-	//	printf("\n");
-	//}
+	printf("%0.15lf, %d\n", error, iter);
+	printf("%lf\n", 1.0 * (end - start) / CLOCKS_PER_SEC);
 
-
-	printf("%lf, %d", error, iter);
 
 	free(arr);
 	free(arr_new);
