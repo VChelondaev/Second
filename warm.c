@@ -22,19 +22,19 @@ int main(int argc, char** argv) {
 
 	arr[0] = 10;
 	arr[N-1] = 20;
-	arr[N * (N - 1)] = 20;
+	arr[N * (N - 1)] = 20;        //Заполнение "Углов"
 	arr[N * N -1] = 30;
 
 
 	//#pragma acc parallel loop
 	for (int i = 1; i < N; i++) {
 		arr[i] = arr[0] + step * i;
-		arr[N * (N - 1) + i] = arr[N - 1] + step * i;
+		arr[N * (N - 1) + i] = arr[N - 1] + step * i;        //Заполнение "Рамки"
 		arr[(N * i)] = arr[0] + step * i;
 		arr[N - 1 + i * N] = arr[N - 1] + step * i;
 	}
 
-	memcpy(arr_new, arr, N * N * sizeof(double));
+	memcpy(arr_new, arr, N * N * sizeof(double));                //Копия изначального массива
 
 	int size = N * N;
 	int iter = 0;
@@ -51,8 +51,8 @@ int main(int argc, char** argv) {
 		for (int i = 1; i < N-1; i++) {
 			for (int j = 1; j < N-1; j++) {
 				int n = i * N + j;
-				arr_new[n] = 0.25 * (arr[n - 1] + arr[n + 1] + arr[(i - 1) * N + j] + arr[(i + 1) * N + j]);
-				error = fmax(error, (arr_new[n] - arr[n]));
+				arr_new[n] = 0.25 * (arr[n - 1] + arr[n + 1] + arr[(i - 1) * N + j] + arr[(i + 1) * N + j]);  // Заполнение самого массива значаниями
+				error = fmax(error, (arr_new[n] - arr[n]));  // Вычисление ошибки
 			}
 			
 		}
@@ -65,11 +65,11 @@ int main(int argc, char** argv) {
 	clock_t end = clock();
 
 	printf("%0.15lf, %d\n", error, iter);
-	printf("%lf\n", 1.0 * (end - start) / CLOCKS_PER_SEC);
+	printf("%lf\n", 1.0 * (end - start) / CLOCKS_PER_SEC);    // Вывод ошибки, кол-ва итераций и времени работы алгоритма
 
 
 	free(arr);
-	free(arr_new);
+	free(arr_new);   // Очистка памяти 
 
 	return 0;
 }
