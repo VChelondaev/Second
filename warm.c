@@ -26,7 +26,7 @@ int main(int argc, char** argv) {
 	arr[N * N -1] = 30;
 
 
-	#pragma acc parallel loop
+	//#pragma acc parallel loop
 	for (int i = 1; i < N; i++) {
 		arr[i] = arr[0] + step * i;
 		arr[N * (N - 1) + i] = arr[N - 1] + step * i;
